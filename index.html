@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demonology - 3D Ghost Hunting</title>
+    <title>DEMONOLOGY - Paranormal Investigation</title>
     <style>
         * {
             margin: 0;
@@ -11,172 +11,343 @@
             box-sizing: border-box;
         }
 
+        @font-face {
+            font-family: 'Terminal';
+            src: local('Courier New'), local('monospace');
+        }
+
         body {
-            font-family: 'Courier New', monospace;
-            background-color: #0a0a0a;
+            font-family: 'Terminal', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0f1f 100%);
             color: #00ff00;
             overflow: hidden;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
         }
 
         canvas {
             display: block;
             width: 100%;
-            height: 100vh;
+            height: 100%;
         }
 
-        #hud {
+        #gameContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* MAIN HUD */
+        #mainHUD {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
+            top: 15px;
+            left: 15px;
+            width: 420px;
+            background: rgba(0, 0, 0, 0.95);
             border: 2px solid #00ff00;
-            border-radius: 5px;
-            width: 350px;
-            font-size: 12px;
-            line-height: 1.6;
+            border-radius: 3px;
+            padding: 15px;
+            z-index: 100;
+            font-size: 11px;
+            line-height: 1.7;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .hud-header {
+            text-align: center;
+            color: #ffff00;
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 8px;
         }
 
         .hud-section {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #00ff00;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed rgba(0, 255, 0, 0.3);
         }
 
         .hud-section:last-child {
             border-bottom: none;
         }
 
-        .hud-title {
-            color: #ffff00;
+        .section-title {
+            color: #00ffff;
             font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 10px;
             text-transform: uppercase;
-            margin-bottom: 8px;
         }
 
-        .hud-row {
+        .stat-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
+            align-items: center;
         }
 
-        .hud-label {
+        .stat-label {
+            color: #888;
+            flex: 1;
+        }
+
+        .stat-value {
+            color: #00ff00;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .stat-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            margin-top: 3px;
+            position: relative;
+            border-radius: 2px;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ffff00);
+            transition: width 0.2s;
+            border-radius: 1px;
+        }
+
+        .stat-bar-fill.critical {
+            background: linear-gradient(90deg, #ff0000, #ff6600);
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        /* EQUIPMENT PANEL */
+        #equipmentPanel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #ff00ff;
+            border-radius: 3px;
+            padding: 12px;
+            z-index: 100;
+            font-size: 10px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+        }
+
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .equipment-item {
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid #ff00ff;
+            padding: 8px;
+            text-align: center;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .equipment-item:hover {
+            background: rgba(255, 0, 255, 0.2);
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+        }
+
+        .equipment-item.active {
+            background: rgba(255, 0, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+            color: #ffffff;
+        }
+
+        .equipment-name {
+            font-weight: bold;
+            color: #ff00ff;
+            margin-bottom: 3px;
+        }
+
+        .equipment-status {
+            font-size: 9px;
             color: #888;
         }
 
-        .hud-value {
-            color: #00ff00;
-            font-weight: bold;
-        }
-
-        .sanity-critical {
-            color: #ff0000;
-            animation: pulse 0.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        #hunting-indicator {
+        /* EVIDENCE TRACKER */
+        #evidenceTracker {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 0, 0, 0.1);
-            border: 2px solid #ff0000;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-            color: #ff0000;
-            font-weight: bold;
-            z-index: 100;
-            display: none;
-        }
-
-        .hunting-text {
-            font-size: 20px;
-            animation: hunt-pulse 0.3s infinite;
-        }
-
-        @keyframes hunt-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        #evidence-tracker {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 2px solid #00ff00;
-            padding: 15px;
-            border-radius: 5px;
-            width: 300px;
-            z-index: 100;
-            font-size: 11px;
-        }
-
-        .evidence-item {
-            margin-bottom: 8px;
-            padding: 5px;
-            background: rgba(0, 255, 0, 0.1);
-            border-left: 3px solid #00ff00;
-        }
-
-        .evidence-item.collected {
-            border-left-color: #ffff00;
-            background: rgba(255, 255, 0, 0.1);
-        }
-
-        #camera-feed {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 300px;
-            height: 225px;
+            bottom: 15px;
+            left: 15px;
+            width: 350px;
             background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ffff;
+            border-radius: 3px;
+            padding: 12px;
+            z-index: 100;
+            font-size: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .evidence-box {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            padding: 8px;
+            text-align: center;
+            border-radius: 2px;
+            font-size: 9px;
+            transition: all 0.3s;
+            min-height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .evidence-box.found {
+            background: rgba(255, 255, 0, 0.2);
+            border-color: #ffff00;
+            color: #ffff00;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+
+        /* INFRARED CAMERA */
+        #cameraPanel {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            width: 320px;
+            background: rgba(0, 0, 0, 0.98);
             border: 2px solid #00ff00;
             border-radius: 3px;
+            padding: 10px;
             z-index: 100;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
         }
 
         #cameraCanvas {
             width: 100%;
-            height: 100%;
+            height: 240px;
+            background: #000;
+            border: 1px solid #00ff00;
             display: block;
+            filter: contrast(1.2) brightness(0.9);
         }
 
         .camera-label {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            font-size: 10px;
+            text-align: center;
             color: #00ff00;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 3px 8px;
-            z-index: 101;
+            font-size: 9px;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        #controls {
+        /* HUNT INDICATOR */
+        #huntIndicator {
             position: absolute;
-            bottom: 260px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 2px solid #00ff00;
-            padding: 15px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.2);
+            border: 3px solid #ff0000;
+            padding: 30px 50px;
             border-radius: 5px;
-            font-size: 11px;
+            z-index: 150;
+            display: none;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.8);
+        }
+
+        .hunt-text {
+            color: #ff0000;
+            font-size: 28px;
+            font-weight: bold;
+            animation: hunt-pulse 0.4s infinite;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        @keyframes hunt-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* CONTROLS */
+        #controlsPanel {
+            position: absolute;
+            bottom: 280px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #ffff00;
+            border-radius: 3px;
+            padding: 12px;
             z-index: 100;
+            font-size: 9px;
             width: 200px;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.3);
         }
 
-        .control-group {
-            margin-bottom: 10px;
+        .control-item {
+            margin-bottom: 6px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed rgba(255, 255, 0, 0.2);
         }
 
-        #withering-effect {
+        .control-item:last-child {
+            border-bottom: none;
+        }
+
+        .control-key {
+            color: #ffff00;
+            font-weight: bold;
+        }
+
+        .control-desc {
+            color: #888;
+            margin-left: 5px;
+        }
+
+        /* MINIMAP */
+        #minimap {
+            position: absolute;
+            bottom: 15px;
+            left: 380px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #ff00ff;
+            border-radius: 3px;
+            padding: 8px;
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ff00ff;
+            background: #000;
+            display: block;
+        }
+
+        /* EFFECTS */
+        #screenOverlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -184,9 +355,10 @@
             height: 100%;
             pointer-events: none;
             z-index: 50;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
         }
 
-        #hunt-vignette {
+        #witherEffect {
             position: fixed;
             top: 0;
             left: 0;
@@ -194,166 +366,310 @@
             height: 100%;
             pointer-events: none;
             z-index: 40;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #huntVignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 45;
             box-shadow: inset 0 0 100px rgba(255, 0, 0, 0);
         }
 
         .crosshair {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 2px solid rgba(0, 255, 0, 0.5);
-            left: 50%;
+            position: fixed;
             top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(0, 255, 0, 0.4);
+            border-radius: 50%;
             pointer-events: none;
-        }
-
-        .crosshair::before,
-        .crosshair::after {
-            content: '';
-            position: absolute;
-            background: rgba(0, 255, 0, 0.5);
+            z-index: 99;
         }
 
         .crosshair::before {
+            content: '';
+            position: absolute;
             width: 2px;
-            height: 10px;
-            left: 14px;
-            top: -5px;
+            height: 12px;
+            background: rgba(0, 255, 0, 0.4);
+            left: 50%;
+            top: -8px;
+            transform: translateX(-50%);
         }
 
         .crosshair::after {
-            width: 10px;
+            content: '';
+            position: absolute;
+            width: 12px;
             height: 2px;
-            left: -5px;
-            top: 14px;
+            background: rgba(0, 255, 0, 0.4);
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* NOTIFICATIONS */
+        #notifications {
+            position: absolute;
+            top: 450px;
+            left: 15px;
+            z-index: 100;
+            max-width: 400px;
+        }
+
+        .notification {
+            background: rgba(0, 0, 0, 0.95);
+            border-left: 4px solid #00ff00;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            animation: slideIn 0.3s;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+        }
+
+        .notification.warning {
+            border-left-color: #ffff00;
+        }
+
+        .notification.danger {
+            border-left-color: #ff0000;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* GHOST DETECTOR */
+        #ghostDetector {
+            position: absolute;
+            bottom: 280px;
+            left: 15px;
+            width: 200px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #ff0000;
+            border-radius: 3px;
+            padding: 12px;
+            z-index: 100;
+            font-size: 10px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+
+        .detector-bars {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+            height: 40px;
+            align-items: flex-end;
+            gap: 3px;
+        }
+
+        .detector-bar {
+            width: 8px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid #ff0000;
+            border-radius: 1px;
+            transition: all 0.1s;
+        }
+
+        .detector-bar.active {
+            background: #ff0000;
+            box-shadow: 0 0 8px #ff0000;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    
-    <!-- HUD -->
-    <div id="hud">
-        <div class="hud-section">
-            <div class="hud-title">INVESTIGATION STATUS</div>
-            <div class="hud-row">
-                <span class="hud-label">SANITY:</span>
-                <span class="hud-value" id="sanity-display">100%</span>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- MAIN HUD -->
+        <div id="mainHUD">
+            <div class="hud-header">⚠ DEMONOLOGY ⚠</div>
+            
+            <div class="hud-section">
+                <div class="section-title">VITALS</div>
+                <div class="stat-row">
+                    <span class="stat-label">SANITY:</span>
+                    <span class="stat-value" id="sanity-val">100%</span>
+                </div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" id="sanity-bar" style="width: 100%"></div>
+                </div>
+                <div class="stat-row" style="margin-top: 6px;">
+                    <span class="stat-label">STAMINA:</span>
+                    <span class="stat-value" id="stamina-val">100%</span>
+                </div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" id="stamina-bar" style="width: 100%"></div>
+                </div>
             </div>
-            <div class="hud-row">
-                <span class="hud-label">EMF LEVEL:</span>
-                <span class="hud-value" id="emf-display">0/5</span>
+
+            <div class="hud-section">
+                <div class="section-title">DETECTION</div>
+                <div class="stat-row">
+                    <span class="stat-label">EMF LEVEL:</span>
+                    <span class="stat-value" id="emf-val">0/5</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">TEMPERATURE:</span>
+                    <span class="stat-value" id="temp-val">68°F</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">DISTANCE:</span>
+                    <span class="stat-value" id="dist-val">--m</span>
+                </div>
             </div>
-            <div class="hud-row">
-                <span class="hud-label">TEMPERATURE:</span>
-                <span class="hud-value" id="temp-display">68°F</span>
+
+            <div class="hud-section">
+                <div class="section-title">GHOST ANALYSIS</div>
+                <div class="stat-row">
+                    <span class="stat-label">TYPE:</span>
+                    <span class="stat-value" id="ghost-type">UNKNOWN</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">THREAT:</span>
+                    <span class="stat-value" id="threat-level">LOW</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">HUNT:</span>
+                    <span class="stat-value" id="hunt-status">DORMANT</span>
+                </div>
+            </div>
+
+            <div class="hud-section">
+                <div class="section-title">LOCATION</div>
+                <div class="stat-row">
+                    <span class="stat-label">ZONE:</span>
+                    <span class="stat-value" id="zone-val">LOBBY</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">G-ROOM:</span>
+                    <span class="stat-value" id="ghost-room-val">?</span>
+                </div>
             </div>
         </div>
 
-        <div class="hud-section">
-            <div class="hud-title">GHOST ANALYSIS</div>
-            <div class="hud-row">
-                <span class="hud-label">ENTITY TYPE:</span>
-                <span class="hud-value" id="entity-type">UNKNOWN</span>
-            </div>
-            <div class="hud-row">
-                <span class="hud-label">THREAT LEVEL:</span>
-                <span class="hud-value" id="threat-level">LOW</span>
-            </div>
-            <div class="hud-row">
-                <span class="hud-label">HUNT STATUS:</span>
-                <span class="hud-value" id="hunt-status">DORMANT</span>
+        <!-- EQUIPMENT PANEL -->
+        <div id="equipmentPanel">
+            <div class="hud-header">EQUIPMENT</div>
+            <div class="equipment-grid">
+                <div class="equipment-item" id="eq-emf">
+                    <div class="equipment-name">EMF</div>
+                    <div class="equipment-status">READY</div>
+                </div>
+                <div class="equipment-item" id="eq-thermal">
+                    <div class="equipment-name">THERMAL</div>
+                    <div class="equipment-status">READY</div>
+                </div>
+                <div class="equipment-item" id="eq-spiritbox">
+                    <div class="equipment-name">SPIRIT BOX</div>
+                    <div class="equipment-status">READY</div>
+                </div>
+                <div class="equipment-item" id="eq-uv">
+                    <div class="equipment-name">UV LIGHT</div>
+                    <div class="equipment-status">READY</div>
+                </div>
+                <div class="equipment-item" id="eq-camera">
+                    <div class="equipment-name">CAMERA</div>
+                    <div class="equipment-status">READY</div>
+                </div>
+                <div class="equipment-item" id="eq-salt">
+                    <div class="equipment-name">SALT</div>
+                    <div class="equipment-status">3/3</div>
+                </div>
             </div>
         </div>
 
-        <div class="hud-section">
-            <div class="hud-title">LOCATION</div>
-            <div class="hud-row">
-                <span class="hud-label">CURRENT ZONE:</span>
-                <span class="hud-value" id="zone-display">LOBBY</span>
-            </div>
-            <div class="hud-row">
-                <span class="hud-label">GHOST ROOM:</span>
-                <span class="hud-value" id="ghost-room-display">UNKNOWN</span>
+        <!-- EVIDENCE TRACKER -->
+        <div id="evidenceTracker">
+            <div class="hud-header">EVIDENCE COLLECTED</div>
+            <div class="evidence-grid">
+                <div class="evidence-box" data-evidence="EMF_5">EMF LVL 5</div>
+                <div class="evidence-box" data-evidence="GHOST_ORBS">GHOST ORBS</div>
+                <div class="evidence-box" data-evidence="SPIRIT_BOX">SPIRIT BOX</div>
+                <div class="evidence-box" data-evidence="FREEZING_TEMP">FREEZING TEMP</div>
+                <div class="evidence-box" data-evidence="GHOST_WRITING">GHOST WRITING</div>
+                <div class="evidence-box" data-evidence="HANDPRINTS">HANDPRINTS</div>
+                <div class="evidence-box" data-evidence="LASER_PROJECTION">LASER PROJ</div>
             </div>
         </div>
 
-        <div class="hud-section">
-            <div class="hud-title">EQUIPMENT</div>
-            <div class="hud-row">
-                <span class="hud-label">EMF READER:</span>
-                <span class="hud-value" id="eq-emf">ACTIVE</span>
+        <!-- INFRARED CAMERA -->
+        <div id="cameraPanel">
+            <canvas id="cameraCanvas"></canvas>
+            <div class="camera-label">INFRARED THERMAL</div>
+        </div>
+
+        <!-- MINIMAP -->
+        <div id="minimap">
+            <canvas id="minimapCanvas"></canvas>
+        </div>
+
+        <!-- GHOST DETECTOR -->
+        <div id="ghostDetector">
+            <div style="color: #ff0000; font-weight: bold; margin-bottom: 8px;">EMF DETECTOR</div>
+            <div class="detector-bars" id="detectorBars">
+                <div class="detector-bar"></div>
+                <div class="detector-bar"></div>
+                <div class="detector-bar"></div>
+                <div class="detector-bar"></div>
+                <div class="detector-bar"></div>
             </div>
-            <div class="hud-row">
-                <span class="hud-label">THERMOMETER:</span>
-                <span class="hud-value" id="eq-temp">ACTIVE</span>
-            </div>
-            <div class="hud-row">
-                <span class="hud-label">SPIRIT BOX:</span>
-                <span class="hud-value" id="eq-box">READY</span>
+            <div style="text-align: center; color: #ff0000; font-size: 9px;">
+                <span id="detector-reading">0.0 Hz</span>
             </div>
         </div>
+
+        <!-- CONTROLS -->
+        <div id="controlsPanel">
+            <div class="hud-header" style="margin-bottom: 8px;">CONTROLS</div>
+            <div class="control-item">
+                <span class="control-key">WASD</span><span class="control-desc">Move</span>
+            </div>
+            <div class="control-item">
+                <span class="control-key">SPACE</span><span class="control-desc">Sprint</span>
+            </div>
+            <div class="control-item">
+                <span class="control-key">MOUSE</span><span class="control-desc">Look</span>
+            </div>
+            <div class="control-item">
+                <span class="control-key">E</span><span class="control-desc">Interact</span>
+            </div>
+            <div class="control-item">
+                <span class="control-key">C</span><span class="control-desc">Camera</span>
+            </div>
+            <div class="control-item">
+                <span class="control-key">1-6</span><span class="control-desc">Equipment</span>
+            </div>
+        </div>
+
+        <!-- HUNT INDICATOR -->
+        <div id="huntIndicator">
+            <div class="hunt-text">⚠ HUNT IN PROGRESS ⚠</div>
+        </div>
+
+        <!-- NOTIFICATIONS -->
+        <div id="notifications"></div>
+
+        <!-- EFFECTS -->
+        <div id="screenOverlay"></div>
+        <div id="witherEffect"></div>
+        <div id="huntVignette"></div>
+        <div class="crosshair"></div>
     </div>
-
-    <!-- Hunting Indicator -->
-    <div id="hunting-indicator">
-        <div class="hunting-text">⚠ HUNT IN PROGRESS ⚠</div>
-    </div>
-
-    <!-- Evidence Tracker -->
-    <div id="evidence-tracker">
-        <div class="hud-title" style="margin-bottom: 10px;">EVIDENCE COLLECTED</div>
-        <div class="evidence-item">
-            <span>[ ] EMF Level 5</span>
-        </div>
-        <div class="evidence-item">
-            <span>[ ] Ghost Orbs</span>
-        </div>
-        <div class="evidence-item">
-            <span>[ ] Spirit Box</span>
-        </div>
-        <div class="evidence-item">
-            <span>[ ] Freezing Temp</span>
-        </div>
-        <div class="evidence-item">
-            <span>[ ] Ghost Writing</span>
-        </div>
-        <div class="evidence-item">
-            <span>[ ] Handprints</span>
-        </div>
-        <div class="evidence-item">
-            <span>[ ] Laser Projection</span>
-        </div>
-    </div>
-
-    <!-- Camera Feed -->
-    <div id="camera-feed">
-        <canvas id="cameraCanvas" width="300" height="225"></canvas>
-        <div class="camera-label">INFRARED CAMERA - ACTIVE</div>
-    </div>
-
-    <!-- Controls -->
-    <div id="controls">
-        <div class="control-group">
-            <strong>MOVEMENT</strong>
-            <div>WASD - Move</div>
-            <div>SPACE - Jump</div>
-        </div>
-        <div class="control-group">
-            <strong>INTERACTION</strong>
-            <div>MOUSE - Look</div>
-            <div>E - Interact</div>
-            <div>C - Camera</div>
-        </div>
-    </div>
-
-    <!-- Visual Effects -->
-    <div id="withering-effect"></div>
-    <div id="hunt-vignette"></div>
-    <div class="crosshair"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/effects.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
